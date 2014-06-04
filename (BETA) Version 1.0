@@ -1,0 +1,50 @@
+/* Is not ready !!! */
+
+#include <amxmod>
+#include <VexdUM>
+#include <VexdUM_stocks>
+#include <csstats>
+
+new const PLUGIN [] = "Distance from the bomb";
+new const VERSION [] = "1.0";
+new const AUTHOR [] = "Swapped";
+
+new bool:isPlanted;
+
+public plugin_init()
+{
+	register_plugin (PLUGIN, VERSION, AUTHOR );
+
+	register_event( "ResetHUD", "reset_hud_delay", "bef" );
+	register_logevent("logevent_round_start", 2, "1=Round_Start")  
+}
+
+public logevent_round_start( ) IsPlanted = false;
+
+public reset_hud_delay(id)
+{
+	IsPlanted = false;
+
+	if( has_user_bomb( id )  )
+	{
+		set_task( 1.75 , "ShowHUD", "id );
+	}
+}
+
+public ShowHUD( id )
+{
+	if( !has_user_weapon( id, CSW_C4 ) || IsPlanted )
+	{
+		remove_task( id );
+	}
+
+	else
+	{
+		
+	}
+}
+
+public bomb_planted( id )
+{
+	IsPlanted = true;
+}
