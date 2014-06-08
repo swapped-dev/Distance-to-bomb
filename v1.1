@@ -1,0 +1,150 @@
+/*
+ * AMX Mod plugin
+ *
+ * test, v1.0
+ *
+ * (c) Copyright 2014 - dede
+ * This file is provided as is (no warranties).
+ *
+ */
+
+/*
+ * Description:
+ * 
+ *	This plugin is show how many meters left until you find the bomb ( after is planted ofcourse )
+ *
+ *
+ *
+ * Command(s):
+ * 
+ *
+ * Cvar(s):
+ * 
+ *	- empty -
+ *
+ * Requirement(s):
+ *		AMX MOD 2010.1 or higher;
+ *
+ *
+ * Setup:
+ * 
+ *
+ * Configuration:
+ * 
+ *
+ * Credit(s):
+ * 		AMX MOD DEV - helping me find the c4 entity ID + developing the amxmod <3
+ *		ezio_auditore - the idea
+ *
+ *
+ * Changelog:
+ * 		v1.0
+ *			o First launch
+ *
+ *		v1.1
+ *			o Pause the plugin if the map dont have bomsites.
+ *			o Add an cvar dtb_toggle 1/0
+ *			o Add ML
+ *
+ */
+
+/******************************************************************************/
+// If you change one of the following settings, do not forget to recompile
+// the plugin and to install the new .amx file on your server.
+// You can find the list of admin flags in the amx/examples/include/amxconst.inc file.
+/******************************************************************************/
+
+#include <translator>
+#include <amxmod>
+#include <VexdUM>
+#include <VexdUM_stock>
+#include <csstats>
+
+new const PLUGIN [] = "Distance from the bomb";
+new const VERSION [] = "1.1";
+new const AUTHOR [] = "Swapped";
+
+new bool:IsDef;
+new g_iC4EntityID;
+new g_iEnableCvar;
+
+public plugin_init()
+{
+	register_plugin (PLUGIN, VERSION, AUTHOR );
+    
+	register_logevent("rsh", 2, "1=Round_Start");
+	
+	g_iEnableCvar = register_cvar( "dtb_toggle", "1" );
+	
+	if( find_entity(-1, "func_bomb_target") > 0 || find_entity(-1, "info_bomb_target") > 0) 
+	{
+		server_print( " %s (v%s) by %s", PLUGIN, VERSION, AUTHOR );
+	}
+	
+	else
+	{
+		log_amx("%s: Plugin paused and locked (there is no bomb site on this map).",PLUGIN );
+		pause("ae")
+	}
+	
+		
+	load_translations("dtb");
+}
+
+public rsh(  ) IsDef = true;
+
+public bomb_planted( id )
+{
+	IsDef = false;
+        
+	new iEntityID = -1
+        
+	while((iEntityID = find_entity(iEntityID, "grenade")) > 0) 
+	{    
+		if(get_offset_int(iEntityID, 96, 5) & (1<<8)) 
+		{
+			g_iC4EntityID = iEntityID
+			break; 
+		}
+	}
+    
+	new Players[32] 
+	new playerCount, i
+    
+	get_players(Players, playerCount, "a") 
+    
+	for (i=0; i<playerCount; i++) 
+	{
+		if( get_cvarptr_num( g_iEnableCvar ) )
+		{
+			bomb_distance_hud( Players[ i ] );
+		}
+	}
+}
+
+public bomb_distance_hud( id )
+{
+	if(IsDef == false && is_user_alive(id) && get_cvarptr_num( g_iEnableCvar ) ) 
+	{
+		set_hudmessage(0, 255, 0, 0.03, 0.38, 0, 6.0, 1.0)
+		show_hudmessage( id, _T("Distance to the bomb: %d meters."), floatround(get_entity_distance(id, g_iC4EntityID) * 0.0254));
+
+		set_task(1.0, "bomb_distance_hud", id);
+	}
+	
+	else
+	{
+		remove_task( id );
+	}
+}
+
+public bomb_defused( id )
+{
+	IsDef = true;
+}
+
+
+public bomb_exploded(planter,defuser)
+{
+	IsDef = true;
+}
